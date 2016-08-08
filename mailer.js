@@ -16,6 +16,7 @@ module.exports = function (log) {
   // Email template to UTM campaign map, each of these should be unique and
   // map to exactly one email template.
   var templateNameToCampaignMap = {
+    'authorizeLoginEmail': 'authorize-signin',
     'newDeviceLoginEmail': 'new-device-signin',
     'passwordResetRequiredEmail': 'password-reset-required',
     'passwordChangedEmail': 'password-changed-success',
@@ -33,6 +34,7 @@ module.exports = function (log) {
   // Email template to UTM content, this is typically the main call out link/button
   // in template.
   var templateNameToContentMap = {
+    'authorizeLoginEmail': 'authorize-login',
     'newDeviceLoginEmail': 'password-change',
     'passwordChangedEmail': 'password-change',
     'passwordResetEmail': 'password-reset',
@@ -95,6 +97,7 @@ module.exports = function (log) {
     }
 
     this.androidUrl = config.androidUrl
+    this.authorizeLoginUrl = config.authorizeLoginUrl
     this.initiatePasswordChangeUrl = config.initiatePasswordChangeUrl
     this.initiatePasswordResetUrl = config.initiatePasswordResetUrl
     this.iosUrl = config.iosUrl
@@ -102,6 +105,7 @@ module.exports = function (log) {
     this.passwordManagerInfoUrl = config.passwordManagerInfoUrl
     this.passwordResetUrl = config.passwordResetUrl
     this.privacyUrl = config.privacyUrl
+    this.rejectAuthorizeLoginUrl = config.rejectAuthorizeLoginUrl
     this.sender = config.sender
     this.signInUrl = config.signInUrl
     this.supportUrl = config.supportUrl
@@ -114,18 +118,6 @@ module.exports = function (log) {
 
   Mailer.prototype.stop = function () {
     this.mailer.close()
-  }
-
-  Mailer.prototype._supportLinkAttributes = function (templateName) {
-    return linkAttributes(this.createSupportLink(templateName))
-  }
-
-  Mailer.prototype._passwordResetLinkAttributes = function (email, templateName) {
-    return linkAttributes(this.createPasswordResetLink(email, templateName))
-  }
-
-  Mailer.prototype._passwordChangeLinkAttributes = function (email, templateName) {
-    return linkAttributes(this.createPasswordChangeLink(email, templateName))
   }
 
   Mailer.prototype._formatUserAgentInfo = function (message) {
@@ -258,6 +250,52 @@ module.exports = function (log) {
         privacyUrl: links.privacyUrl,
         supportUrl: links.supportUrl,
         supportLinkAttributes: links.supportLinkAttributes
+      },
+      uid: message.uid
+    })
+  }
+
+
+  Mailer.prototype.authorizeLoginEmail = function (message) {
+    log.trace({ op: 'mailer.authoirzeLoginEmail', email: message.email, uid: message.uid })
+
+    var templateName = 'authorizeLoginEmail'
+    var query = {
+      code: message.code,
+      email: message.email,
+      uid: message.uid
+    }
+
+    if (message.service) { query.service = message.service }
+    if (message.redirectTo) { query.redirectTo = message.redirectTo }
+    if (message.resume) { query.resume = message.resume }
+
+    var links = this._generateLinks(this.authorizeLoginUrl, message.email, query, templateName)
+
+    return this.send({
+      acceptLanguage: message.acceptLanguage,
+      email: message.email,
+      headers: {
+        'X-Link': links.link,
+        'X-Service-ID': message.service,
+        'X-Uid': message.uid,
+        'X-Verify-Code': message.code
+      },
+      subject: gettext('Authorize sign-in to Firefox'),
+      template: templateName,
+      templateValues: {
+        alternativeLink: links.alternativeLink,
+        device: this._formatUserAgentInfo(message),
+        email: message.email,
+        ip: message.ip,
+        link: links.link,
+        location: this._constructLocationString(message),
+        privacyUrl: links.privacyUrl,
+        reportLink: links.rejectAuthorizeLoginLink,
+        reportLinkAttributes: links.rejectAuthorizeLoginLinkAttributes,
+        supportLinkAttributes: links.supportLinkAttributes,
+        supportUrl: links.supportUrl,
+        timestamp: this._constructLocalTimeString(message.timeZone, message.acceptLanguage)
       },
       uid: message.uid
     })
@@ -602,10 +640,23 @@ module.exports = function (log) {
 
     links['passwordManagerInfoUrl'] = this._generateUTMLink(this.passwordManagerInfoUrl, query, templateName, 'password-info')
 
+    links['rejectAuthorizeLoginLink'] = this.createRejectAuthorizeLoginLink(email, templateName, query)
+    links['rejectAuthorizeLoginLinkAttributes'] = this._rejectAuthorizeLoginAttributes(email, templateName, query)
+
     var queryOneClick = extend(query, {one_click: true})
     links['oneClickLink'] = this._generateUTMLink(primaryLink, queryOneClick, templateName, utmContent + '-oneclick')
 
     return links
+  }
+
+  Mailer.prototype.createAuthorizeLoginLink = function (email, templateName) {
+    var query = { email: email }
+
+    return this._generateUTMLink(this.authorizeLoginUrl, query, templateName, 'authorize-login')
+  }
+
+  Mailer.prototype._authorizeLoginLinkAttributes = function (email, templateName) {
+    return linkAttributes(this.createAuthorizeLoginLink(email, templateName))
   }
 
   Mailer.prototype.createPasswordResetLink = function (email, templateName) {
@@ -616,10 +667,30 @@ module.exports = function (log) {
     return this._generateUTMLink(this.initiatePasswordResetUrl, query, templateName, 'reset-password')
   }
 
+  Mailer.prototype._passwordResetLinkAttributes = function (email, templateName) {
+    return linkAttributes(this.createPasswordResetLink(email, templateName))
+  }
+
   Mailer.prototype.createPasswordChangeLink = function (email, templateName) {
     var query = { email: email }
 
     return this._generateUTMLink(this.initiatePasswordChangeUrl, query, templateName, 'change-password')
+  }
+
+  Mailer.prototype._passwordChangeLinkAttributes = function (email, templateName) {
+    return linkAttributes(this.createPasswordChangeLink(email, templateName))
+  }
+
+  Mailer.prototype.createRejectAuthorizeLoginLink = function (email, templateName, data) {
+    var query = {
+      code: data.code,
+      uid: data.uid
+    }
+    return this._generateUTMLink(this.rejectAuthorizeLoginUrl, query, templateName, 'report')
+  }
+
+  Mailer.prototype._rejectAuthorizeLoginAttributes = function (email, templateName, query) {
+    return linkAttributes(this.createRejectAuthorizeLoginLink(email, templateName, query))
   }
 
   Mailer.prototype.createSignInLink = function (email, templateName) {
@@ -630,6 +701,10 @@ module.exports = function (log) {
 
   Mailer.prototype.createSupportLink = function (templateName) {
     return this._generateUTMLink(this.supportUrl, {}, templateName, 'support')
+  }
+
+  Mailer.prototype._supportLinkAttributes = function (templateName) {
+    return linkAttributes(this.createSupportLink(templateName))
   }
 
   Mailer.prototype.createPrivacyLink = function (templateName) {

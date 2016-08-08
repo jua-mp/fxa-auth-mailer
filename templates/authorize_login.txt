@@ -1,0 +1,14 @@
+{{t "Authorize sign-in?"}}
+{{t "We have blocked a sign-in attempt from this device:" }}
+
+{{ device }}
+{{#if ip}}{{t "IP address: %(ip)s" }}{{/if}}
+{{#if location}}{{ location }}{{/if}}
+{{#if timestamp}}{{ timestamp }}{{/if}}
+
+{{t "Authorize sign-in"}} {{{link}}}
+
+{{t "If you suspect that someone is trying to gain access to your account, report it to us." }} {{{ reportLink }}}
+
+Mozilla. 331 E Evelyn Ave, Mountain View, CA 94041
+{{t "Mozilla Privacy Policy" }} {{{privacyUrl}}}

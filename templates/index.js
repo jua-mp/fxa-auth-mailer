@@ -48,6 +48,7 @@ function loadTemplates(name) {
 module.exports = function () {
   return P.all(
     [
+      'authorize_login',
       'new_device_login',
       'password_changed',
       'password_reset',

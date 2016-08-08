@@ -216,11 +216,13 @@ var options = {
 conf.validate(options)
 
 var contentServerUrl = conf.get('contentServer.url')
+conf.set('mail.authorizeLoginUrl', contentServerUrl + '/complete_signin_authorization')
+conf.set('mail.initiatePasswordChangeUrl', contentServerUrl + '/settings/change_password')
+conf.set('mail.initiatePasswordResetUrl', contentServerUrl + '/reset_password')
+conf.set('mail.passwordResetUrl', contentServerUrl + '/v1/complete_reset_password')
+conf.set('mail.rejectAuthorizeLoginUrl', contentServerUrl + '/reject_signin_authorization')
 conf.set('mail.signInUrl', contentServerUrl + '/signin')
 conf.set('mail.verificationUrl', contentServerUrl + '/v1/verify_email')
-conf.set('mail.passwordResetUrl', contentServerUrl + '/v1/complete_reset_password')
-conf.set('mail.initiatePasswordResetUrl', contentServerUrl + '/reset_password')
-conf.set('mail.initiatePasswordChangeUrl', contentServerUrl + '/settings/change_password')
 conf.set('mail.verifyLoginUrl', contentServerUrl + '/complete_signin')
 
 module.exports = conf

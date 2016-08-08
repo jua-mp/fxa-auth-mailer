@@ -10,6 +10,7 @@
  *
  * Where <email type> is one of:
  *   all
+ *   authorizeLoginEmail
  *   newDeviceLoginEmail
  *   passwordChangedEmail
  *   passwordResetEmail

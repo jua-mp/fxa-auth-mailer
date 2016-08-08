@@ -16,6 +16,7 @@ var config = require('../../config')
 var Mailer = require('../../mailer')(nullLog)
 
 var messageTypes = [
+  'authorizeLoginEmail',
   'newDeviceLoginEmail',
   'passwordChangedEmail',
   'passwordResetEmail',
@@ -63,6 +64,7 @@ var typesContainIOSStoreLinks = [
 ]
 
 var typesContainAlternativeLinks = [
+  'authorizeLoginEmail',
   'postVerifyEmail',
   'recoveryEmail',
   'verificationReminderEmail',
@@ -71,6 +73,7 @@ var typesContainAlternativeLinks = [
 ]
 
 var typesContainLocationData = [
+  'authorizeLoginEmail',
   'newDeviceLoginEmail',
   'verifyLoginEmail'
 ]
